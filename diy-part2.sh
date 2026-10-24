@@ -27,3 +27,6 @@ sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/M
 # git clone https://github.com/gSpotx2f/luci-app-cpu-status-mini package/luci-app-cpu-status-mini
 # git clone https://github.com/lkiuyu/luci-app-temp-status package/luci-app-temp-status
 # git clone https://github.com/lkiuyu/DbusSmsForwardCPlus package/DbusSmsForwardCPlus
+# force apk package manager
+sed -i 's|^# CONFIG_USE_APK is not set$|CONFIG_USE_APK=y|' .config
+grep -q '^CONFIG_USE_APK=y' .config || echo 'CONFIG_USE_APK=y' >> .config
