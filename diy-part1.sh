@@ -18,17 +18,36 @@ curl -fsSL https://raw.githubusercontent.com/openwrt/openwrt/master/package/libs
 [ -s package/libs/libffi/Makefile ] || { echo "libffi Makefile 下载失败"; exit 1; }
 echo "libffi 已补齐: $(wc -l < package/libs/libffi/Makefile) 行"
 
-# ---- 补丁 2：打开高通 410 的蓝牙（BREDR / LE / QCOMSMD）----
-KCFG=target/linux/msm89xx/config-6.12
-[ -f "$KCFG" ] || KCFG=$(ls target/linux/msm89xx/config-* | head -1)
-echo "patch kernel config: $KCFG"
-sed -i '/^# CONFIG_BT_BREDR is not set$/d'   "$KCFG"
-sed -i '/^# CONFIG_BT_LE is not set$/d'       "$KCFG"
-sed -i '/^# CONFIG_BT_QCOMSMD is not set$/d'  "$KCFG"
-sed -i '/^CONFIG_BT_BREDR=/d;/^CONFIG_BT_LE=/d;/^CONFIG_BT_QCOMSMD=/d' "$KCFG"
-cat >> "$KCFG" <<'EOF'
+# ---- 补丁 2：打开高通 410 的蓝牙（BREDR/LE/QCOMSMD + RFCOMM/BNEP/HIDP）----
+for KCFG in target/linux/msm89xx/config-6.* target/linux/generic/config-6.*; do
+  [ -f "$KCFG" ] || continue
+  echo "patch kernel config: $KCFG"
+  sed -i \
+    -e '/^# CONFIG_BT_BREDR is not set$/d' \
+    -e '/^# CONFIG_BT_LE is not set$/d' \
+    -e '/^# CONFIG_BT_QCOMSMD is not set$/d' \
+    -e '/^# CONFIG_BT_RFCOMM is not set$/d' \
+    -e '/^# CONFIG_BT_BNEP is not set$/d' \
+    -e '/^# CONFIG_BT_HIDP is not set$/d' \
+    -e '/^CONFIG_BT_BREDR=/d' \
+    -e '/^CONFIG_BT_LE=/d' \
+    -e '/^CONFIG_BT_QCOMSMD=/d' \
+    -e '/^CONFIG_BT_RFCOMM=/d' \
+    -e '/^CONFIG_BT_BNEP=/d' \
+    -e '/^CONFIG_BT_HIDP=/d' "$KCFG"
+  cat >> "$KCFG" <<'EOF'
 CONFIG_BT_BREDR=y
 CONFIG_BT_LE=y
 CONFIG_BT_QCOMSMD=y
+CONFIG_BT_RFCOMM=y
+CONFIG_BT_BNEP=y
+CONFIG_BT_HIDP=y
 EOF
-grep -E '^CONFIG_BT_(BREDR|LE|QCOMSMD)=' "$KCFG"
+done
+
+echo "=== 蓝牙内核配置核对 ==="
+for KCFG in target/linux/msm89xx/config-6.* target/linux/generic/config-6.*; do
+  [ -f "$KCFG" ] || continue
+  echo "$KCFG:"
+  grep -E '^CONFIG_BT_(BREDR|LE|QCOMSMD|RFCOMM|BNEP|HIDP)=' "$KCFG" | sort -u
+done
