@@ -25,4 +25,11 @@ echo 'src-git store https://github.com/linkease/istore.git;main' >> feeds.conf.d
 # sed -i 's|src-git-full openstick https://github.com/lkiuyu/openstick-feeds.git|src-git-full openstick https://github.com/xuxin1955/openstick-feeds|g' feeds.conf.default
 
 
+# 补齐 libffi：上游已把它从 packages feed 移到 openwrt/openwrt 的 package/libs 下
+# 我们的源码锁在 2026-05 的 commit，正好卡在「feed 已删、core 还没加」的空档
+mkdir -p package/libs/libffi
+curl -fsSL https://raw.githubusercontent.com/openwrt/openwrt/master/package/libs/libffi/Makefile \
+  -o package/libs/libffi/Makefile
+[ -s package/libs/libffi/Makefile ] || { echo "libffi Makefile 下载失败"; exit 1; }
+echo "libffi 已补齐: $(wc -l < package/libs/libffi/Makefile) 行"
 
