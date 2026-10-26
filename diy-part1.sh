@@ -18,7 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/openwrt/openwrt/master/package/libs
 [ -s package/libs/libffi/Makefile ] || { echo "libffi Makefile 下载失败"; exit 1; }
 echo "libffi 已补齐: $(wc -l < package/libs/libffi/Makefile) 行"
 
-# ---- 补丁 2：打开高通 410 的蓝牙（BREDR / LE / QCOMSMD / RFCOMM）----
+# ---- 补丁 2：只加 RFCOMM（无线 CarPlay 必需），不动 BNEP/HIDP ----
 KCFG=target/linux/msm89xx/config-6.12
 [ -f "$KCFG" ] || KCFG=$(ls target/linux/msm89xx/config-* | head -1)
 echo "patch kernel config: $KCFG"
@@ -34,15 +34,12 @@ CONFIG_BT_QCOMSMD=y
 CONFIG_BT_RFCOMM=y
 EOF
 
-# generic 配置在 target 之后合并，会把 RFCOMM 覆盖回 not set，这里只修正这一个符号
+# generic 会覆盖 RFCOMM，只修这一个符号
 for G in target/linux/generic/config-6.*; do
   [ -f "$G" ] || continue
   sed -i '/^# CONFIG_BT_RFCOMM is not set$/d;/^CONFIG_BT_RFCOMM=/d' "$G"
   echo 'CONFIG_BT_RFCOMM=y' >> "$G"
 done
 
-echo "=== 蓝牙内核配置核对 ==="
+echo "=== 核对 ==="
 grep -E '^CONFIG_BT_(BREDR|LE|QCOMSMD|RFCOMM)=' "$KCFG" | sort -u
-for G in target/linux/generic/config-6.*; do
-  [ -f "$G" ] && printf "%s: %s\n" "$G" "$(grep -c '^CONFIG_BT_RFCOMM=y' "$G")"
-done
